@@ -1,0 +1,20 @@
+[package]
+name = "corebluetooth"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+async-io = { workspace = true }
+btuuid = { workspace = true }
+dispatch2 = { workspace = true }
+dispatch-executor = { workspace = true }
+futures-io = { workspace = true }
+objc2 = { workspace = true }
+objc2-core-bluetooth = { workspace = true }
+objc2-core-foundation = { workspace = true }
+objc2-foundation = { workspace = true }
+uuid = { workspace = true }
+
+[dev-dependencies]
+tracing = { workspace = true }
+tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }

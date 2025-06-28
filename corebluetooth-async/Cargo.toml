@@ -1,0 +1,20 @@
+[package]
+name = "corebluetooth-async"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+async-broadcast = "0.7.2"
+btuuid = { workspace = true }
+corebluetooth = { workspace = true }
+dispatch-executor = { workspace = true }
+futures-channel = "0.3.31"
+futures-lite = { workspace = true }
+objc2 = { workspace = true }
+objc2-core-bluetooth = { workspace = true }
+uuid = { workspace = true }
+
+[dev-dependencies]
+tokio = { version = "1.45.1", features = ["full"] }
+tracing = { workspace = true }
+tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
