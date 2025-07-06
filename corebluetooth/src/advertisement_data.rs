@@ -1,3 +1,5 @@
+//! Types for working with BLE advertisement data.
+
 use std::collections::HashMap;
 
 use btuuid::BluetoothUuid;
@@ -21,6 +23,7 @@ pub struct AdvertisementData {
     pub service_data: HashMap<BluetoothUuid, Vec<u8>>,
     /// Advertised GATT service UUIDs (CSS §A.1.1)
     pub service_uuids: Vec<BluetoothUuid>,
+    /// Service UUIDs that did not fit in the main advertising packet.
     pub overflow_service_uuids: Vec<BluetoothUuid>,
     /// Transmitted power level (CSS §A.1.5)
     pub tx_power_level: Option<i16>,

@@ -2,6 +2,12 @@
 name = "dispatch-executor"
 version = "0.1.0"
 edition = "2024"
+description = "An asynchronous executor for Apple's Grand Central Dispatch"
+documentation = "https://docs.rs/dispatch-executor"
+repository = "https://github.com/alexmoon/corebluetooth-rs"
+license = "MIT OR Apache-2.0"
+keywords = ["dispatch", "GCD", "ios", "macos"]
+categories = ["api-bindings", "asynchronous", "concurrency", "os::macos-apis"]
 
 [dependencies]
 async-task = "4.7.1"

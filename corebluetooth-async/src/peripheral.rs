@@ -18,6 +18,7 @@ use objc2_core_bluetooth::CBPeer;
 use crate::error::Result;
 use crate::util::{BroadcastReceiver, BroadcastSender, broadcast, watch};
 
+/// An asynchronous wrapper around a [`Peripheral`].
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct PeripheralAsync {
     inner: Peripheral,
@@ -51,6 +52,11 @@ impl Deref for PeripheralAsync {
 }
 
 impl PeripheralAsync {
+    /// Creates a new `PeripheralAsync` from a `Peripheral`.
+    ///
+    /// # Panics
+    ///
+    /// This will panic if the delegate of the `Peripheral` is not a `PeripheralAsyncDelegate`.
     pub fn new(inner: Peripheral) -> Self {
         let delegate: &dyn Any = inner.delegate();
         assert!(delegate.is::<PeripheralAsyncDelegate>());
@@ -66,21 +72,32 @@ impl PeripheralAsync {
         delegate.downcast_ref().unwrap()
     }
 
-    pub async fn name_changed(&self) -> Result<()> {
-        self.delegate().name_updates().recv().await?;
-        Ok(())
+    /// Waits for the peripheral's name to change.
+    pub async fn name_changed(&self) -> BroadcastReceiver<Option<String>> {
+        self.delegate().name_updates()
     }
 
+    /// Initiates service discovery on the peripheral.
+    ///
+    /// If `services` is provided, only services with those UUIDs will be discovered.
     pub async fn discover_services(&self, services: Option<&[BluetoothUuid]>) -> Result<()> {
         self.inner.discover_services(services);
         let mut receiver = self.delegate().service_discovery();
         receiver.recv().await?
     }
 
+    /// Returns a stream of service change events.
     pub fn services_changed(&self) -> async_broadcast::Receiver<Vec<Service>> {
         self.delegate().services_changed()
     }
 
+    /// Initiates discovery of the included services of a service.
+    ///
+    /// The `services` parameter can limit discovery to services matching the provided
+    /// UUIDs.
+    ///
+    /// After discovery completes, the services may be retrieved by calling
+    /// [`Service::included_services()`].
     pub async fn discover_included_services(
         &self,
         service: &Service,
@@ -91,6 +108,13 @@ impl PeripheralAsync {
         receiver.await?
     }
 
+    /// Initiates discovery of the characteristics of a service.
+    ///
+    /// The `characteristics` parameter can limit discovery to characteristics matching
+    /// the provided UUIDs.
+    ///
+    /// After discovery completes, the characteristics may be retrieved by calling
+    /// [`Service::characteristics()`].
     pub async fn discover_characteristics(
         &self,
         service: &Service,
@@ -102,12 +126,17 @@ impl PeripheralAsync {
         receiver.await?
     }
 
+    /// Initiates discovery of the descriptors of a characteristic.
+    ///
+    /// After discovery completes, the characteristics may be retrieved by calling
+    /// [`Characteristic::descriptors()`].
     pub async fn discover_descriptors(&self, characteristic: &Characteristic) -> Result<()> {
         self.inner.discover_descriptors(characteristic);
         let receiver = self.delegate().descriptor_discovery(characteristic.clone());
         receiver.await?
     }
 
+    /// Reads the value of a characteristic.
     pub async fn read_characteristic_value(
         &self,
         characteristic: &Characteristic,
@@ -119,6 +148,7 @@ impl PeripheralAsync {
             .await?
     }
 
+    /// Reads the value of a descriptor.
     pub async fn read_descriptor_value(&self, descriptor: &Descriptor) -> Result<Vec<u8>> {
         self.inner.read_descriptor_value(descriptor);
         self.delegate()
@@ -126,6 +156,7 @@ impl PeripheralAsync {
             .await?
     }
 
+    /// Writes the value of a characteristic.
     pub async fn write_characteristic_value(
         &self,
         characteristic: &Characteristic,
@@ -139,6 +170,7 @@ impl PeripheralAsync {
             .await?
     }
 
+    /// Writes the value of a descriptor.
     pub async fn write_descriptor_value(
         &self,
         descriptor: &Descriptor,
@@ -150,6 +182,7 @@ impl PeripheralAsync {
             .await?
     }
 
+    /// Enables or disables notifications for a characteristic.
     pub async fn set_notify(&self, characteristic: &Characteristic, notify: bool) -> Result<bool> {
         self.inner.set_notify(characteristic, notify);
         self.delegate()
@@ -157,6 +190,11 @@ impl PeripheralAsync {
             .await?
     }
 
+    /// Returns a stream of value updates for a characteristic.
+    ///
+    /// The characteristic value may be updated either as the result of a call to
+    /// [`read_characteristic_value()`][Peripheral::read_characteristic_value] or a notification or indication from the
+    /// peripheral if notifications have been enabled by a call to [`set_notify()`][Self::set_notify].
     pub fn characteristic_value_updates(
         &self,
         characteristic: &Characteristic,
@@ -165,6 +203,7 @@ impl PeripheralAsync {
             .characteristic_value_updates(characteristic.clone())
     }
 
+    /// Waits until the peripheral is ready to send a write without response.
     pub async fn ready_to_send_write_without_response(&self) -> Result<()> {
         if !self.can_send_write_without_repsonse() {
             self.delegate()
@@ -175,12 +214,14 @@ impl PeripheralAsync {
         Ok(())
     }
 
+    /// Reads the RSSI of the peripheral.
     pub async fn read_rssi(&self) -> Result<i16> {
         self.inner.read_rssi();
         let mut receiver = self.delegate().rssi_updates();
         receiver.recv().await?
     }
 
+    /// Opens an L2CAP channel to the peripheral.
     pub async fn open_l2cap_channel(&self, psm: u16) -> Result<(L2capChannel<Self>, UnixStream)> {
         self.inner.open_l2cap_channel(psm);
         let receiver = self.delegate().register_l2cap_channel_open();
@@ -192,7 +233,7 @@ type OneshotMap<K, V> = HashMap<K, oneshot::Sender<Result<V>>>;
 type L2capChannelOpenResult = Result<(L2capChannel<PeripheralAsync>, UnixStream)>;
 
 pub(crate) struct PeripheralAsyncDelegate {
-    name_updates: BroadcastSender<()>,
+    name_updates: BroadcastSender<Option<String>>,
     services_changed: BroadcastSender<Vec<Service>>,
     rssi_updates: BroadcastSender<Result<i16>>,
     service_discovery: BroadcastSender<Result<()>>,
@@ -237,8 +278,8 @@ impl Default for PeripheralAsyncDelegate {
 }
 
 impl PeripheralDelegate for PeripheralAsyncDelegate {
-    fn did_update_name(&self, _peripheral: Peripheral) {
-        let _ = self.name_updates.try_broadcast(());
+    fn did_update_name(&self, peripheral: Peripheral) {
+        let _ = self.name_updates.try_broadcast(peripheral.name());
     }
 
     fn did_modify_services(
@@ -400,7 +441,7 @@ impl PeripheralDelegate for PeripheralAsyncDelegate {
 }
 
 impl PeripheralAsyncDelegate {
-    pub fn name_updates(&self) -> BroadcastReceiver<()> {
+    pub fn name_updates(&self) -> BroadcastReceiver<Option<String>> {
         self.name_updates.new_receiver()
     }
 

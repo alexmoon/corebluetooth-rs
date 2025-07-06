@@ -1,4 +1,8 @@
-//! `Uuid` extensions for Bluetooth UUIDs
+//! Bluetooth-specific UUID functionality.
+//!
+//! This module provides helpers for working with Bluetooth UUIDs, which can be
+//! 16, 32, or 128 bits. It also includes constants for many standard Bluetooth
+//! GATT services, characteristics, and descriptors.
 
 use uuid::Uuid;
 
@@ -110,7 +114,7 @@ mod private {
     impl Sealed for Uuid {}
 }
 
-/// Bluetooth GATT Service 16-bit UUIDs
+/// Standard Bluetooth GATT Service UUIDs.
 #[allow(missing_docs)]
 pub mod services {
     use super::bluetooth_uuid_from_u16;
@@ -181,7 +185,7 @@ pub mod services {
     pub const PUBLIC_BROADCAST_ANNOUNCEMENT: Uuid = bluetooth_uuid_from_u16(0x1856);
 }
 
-/// Bluetooth GATT Characteristic 16-bit UUIDs
+/// Standard Bluetooth GATT Characteristic UUIDs.
 #[allow(missing_docs)]
 pub mod characteristics {
     use super::bluetooth_uuid_from_u16;
@@ -597,7 +601,7 @@ pub mod characteristics {
     pub const ACTIVE_PRESET_INDEX: Uuid = bluetooth_uuid_from_u16(0x2BDC);
 }
 
-/// Bluetooth GATT Descriptor 16-bit UUIDs
+/// Standard Bluetooth GATT Descriptor UUIDs.
 #[allow(missing_docs)]
 pub mod descriptors {
     use super::bluetooth_uuid_from_u16;

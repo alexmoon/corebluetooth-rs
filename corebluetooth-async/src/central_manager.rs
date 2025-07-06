@@ -17,6 +17,7 @@ use crate::error::{Error, Result};
 use crate::peripheral::{PeripheralAsync, PeripheralAsyncDelegate};
 use crate::util::{BroadcastReceiver, BroadcastSender, broadcast, defer, watch};
 
+/// An asynchronous wrapper around [`CentralManager`].
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct CentralManagerAsync {
     inner: CentralManager,
@@ -34,7 +35,11 @@ impl Deref for CentralManagerAsync {
 }
 
 impl CentralManagerAsync {
-    pub fn background<F, R>(qos: DispatchQoS, show_power_alert: bool, func: F) -> R
+    /// Creates a new central manager on a background thread.
+    ///
+    /// This will create a new background dispatch queue with the given quality of service class.
+    /// The `entry` function will be called on this queue as well.
+    pub fn background<F, R>(qos: DispatchQoS, show_power_alert: bool, entry: F) -> R
     where
         F: FnOnce(Self, &Executor) -> R + Send,
         R: Send,
@@ -46,11 +51,12 @@ impl CentralManagerAsync {
             None,
             |inner, executor| {
                 let central = Self { inner };
-                func(central, executor)
+                entry(central, executor)
             },
         )
     }
 
+    /// Creates a new central manager on the main thread.
     pub fn main_thread(show_power_alert: bool, mtm: MainThreadMarker) -> Self {
         let inner = CentralManager::main_thread(
             Box::new(CentralManagerAsyncDelegate::new()),
@@ -66,15 +72,18 @@ impl CentralManagerAsync {
         delegate.downcast_ref().unwrap()
     }
 
+    /// Returns a stream of state updates for the central manager.
     pub fn state_updates(&self) -> BroadcastReceiver<CBManagerState> {
         self.delegate().state_updated()
     }
 
+    /// Establishes a connection to a peripheral.
     pub async fn connect(&self, peripheral: &PeripheralAsync) -> Result<()> {
         self.connect_with_options(peripheral, Default::default())
             .await
     }
 
+    /// Establishes a connection to a peripheral with the given options.
     pub async fn connect_with_options(
         &self,
         peripheral: &PeripheralAsync,
@@ -94,6 +103,10 @@ impl CentralManagerAsync {
         res
     }
 
+    /// Cancels an active or pending connection to a peripheral.
+    ///
+    /// If the peripheral is already connected, this will return a [`DidDisconnect`] event when the
+    /// peripheral has been disconnected.
     pub async fn cancel_peripheral_connection(
         &self,
         peripheral: &PeripheralAsync,
@@ -117,13 +130,26 @@ impl CentralManagerAsync {
         }
     }
 
+    /// Returns a stream of disconnection events.
     pub fn disconnections(&self) -> BroadcastReceiver<DidDisconnect> {
         self.delegate().disconnects()
     }
 
+    /// Starts scanning for peripherals.
+    ///
+    /// The `services` parameter is a list of service UUIDs to scan for. If it is `None`, all
+    /// peripherals will be discovered. The `solicited_services` parameter is similar, but
+    /// filtering for those peripherals that are looking for a central with the given service
+    /// UUIDs.
+    ///
+    /// [`stop_scan()`][CentralManager::stop_scan] should be called when the returned receiver
+    /// is dropped. Otherwise, the scan will not be stopped until the next discovery occurs
+    /// after the receiver is dropped.
+    ///
     /// # Panics
     ///
-    /// Panics if a scan is already in progress (e.g. `is_scanning()` returns true).
+    /// Panics if a scan is already in progress (e.g.
+    /// [`is_scanning()`][CentralManager::is_scanning] returns true).
     pub fn scan(
         &self,
         services: Option<&[BluetoothUuid]>,
@@ -140,10 +166,12 @@ impl CentralManagerAsync {
         self.delegate().discoveries()
     }
 
+    /// Returns a stream of connection events.
     pub fn connection_events(&self) -> BroadcastReceiver<ConnectionEvent> {
         self.delegate().connection_events()
     }
 
+    /// Returns a stream of ANCS authorization updates.
     pub fn ancs_authorization_updates(&self) -> BroadcastReceiver<PeripheralAsync> {
         self.delegate().ancs_authorization_updates()
     }
@@ -305,23 +333,35 @@ impl CentralManagerAsyncDelegate {
     }
 }
 
+/// A peripheral disconnection event.
 #[derive(Debug, Clone)]
 pub struct DidDisconnect {
+    /// The peripheral that was disconnected.
     pub peripheral: PeripheralAsync,
+    /// The time at which the disconnection occurred.
     pub timestamp: Option<std::time::SystemTime>,
+    /// Whether the peripheral is being reconnected.
     pub is_reconnecting: bool,
+    /// The error that caused the disconnection, if any.
     pub error: Option<Error>,
 }
 
+/// A peripheral discovery event.
 #[derive(Debug, Clone)]
 pub struct DidDiscover {
+    /// The peripheral that was discovered.
     pub peripheral: PeripheralAsync,
+    /// The advertisement data of the peripheral.
     pub advertisement_data: AdvertisementData,
+    /// The RSSI of the peripheral.
     pub rssi: i16,
 }
 
+/// A connection event.
 #[derive(Debug, Clone)]
 pub struct ConnectionEvent {
+    /// The peripheral that the event is for.
     pub peripheral: PeripheralAsync,
+    /// The connection event.
     pub event: CBConnectionEvent,
 }

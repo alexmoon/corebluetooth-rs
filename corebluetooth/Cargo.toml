@@ -2,13 +2,17 @@
 name = "corebluetooth"
 version = "0.1.0"
 edition = "2024"
+description = "A safe wrapper for Apple's CoreBluetooth framework"
+documentation = "https://docs.rs/corebluetooth"
+repository = "https://github.com/alexmoon/corebluetooth-rs"
+license = "MIT OR Apache-2.0"
+keywords = ["bluetooth", "BLE", "corebluetooth", "ios", "macos"]
+categories = ["api-bindings", "hardware-support", "os::macos-apis"]
 
 [dependencies]
-async-io = { workspace = true }
 btuuid = { workspace = true }
 dispatch2 = { workspace = true }
 dispatch-executor = { workspace = true }
-futures-io = { workspace = true }
 objc2 = { workspace = true }
 objc2-core-bluetooth = { workspace = true }
 objc2-core-foundation = { workspace = true }

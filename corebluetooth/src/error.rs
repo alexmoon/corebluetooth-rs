@@ -1,21 +1,31 @@
+//! Error types for this crate.
+
 use std::fmt::Display;
 
 use objc2::Message;
 use objc2::rc::Retained;
-use objc2_core_bluetooth::{CBATTError, CBATTErrorDomain, CBError, CBErrorDomain};
+use objc2_core_bluetooth::{CBATTErrorDomain, CBErrorDomain};
 use objc2_foundation::NSError;
 
+pub use objc2_core_bluetooth::{CBATTError, CBError};
+
+/// A convenience type alias for a `Result` with an `Error` type.
 pub type Result<T> = std::result::Result<T, Error>;
 
+/// An error that can occur in this crate.
 #[derive(Debug, Clone)]
 pub struct Error {
     data: ErrorData,
 }
 
+/// The kind of error that occurred.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum ErrorKind {
+    /// A Core Bluetooth error.
     Bluetooth(CBError),
+    /// A Bluetooth GATT server error.
     ATT(CBATTError),
+    /// An unknown or other error.
     Other,
 }
 
@@ -34,7 +44,11 @@ impl Display for Error {
     }
 }
 
-impl std::error::Error for Error {}
+impl std::error::Error for Error {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        self.get_ref().map(|err| err as &dyn std::error::Error)
+    }
+}
 
 impl From<ErrorKind> for Error {
     fn from(kind: ErrorKind) -> Self {
@@ -61,6 +75,7 @@ impl Error {
         }
     }
 
+    /// Returns a reference to the underlying `NSError`.
     pub fn get_ref(&self) -> Option<&NSError> {
         match &self.data {
             ErrorData::Os(error) => Some(error),
@@ -68,6 +83,7 @@ impl Error {
         }
     }
 
+    /// Extract the underlying `NSError`.
     pub fn into_inner(self) -> Option<Retained<NSError>> {
         match self.data {
             ErrorData::Os(error) => Some(error),
@@ -75,6 +91,7 @@ impl Error {
         }
     }
 
+    /// Returns the kind of error.
     pub fn kind(&self) -> ErrorKind {
         match &self.data {
             ErrorData::Os(error) => ErrorKind::from(&**error),

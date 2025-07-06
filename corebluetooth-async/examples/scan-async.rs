@@ -52,7 +52,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 }
             };
 
-            executor.spawn_local(task)
+            unsafe { executor.spawn_local(task) }
         });
 
     task.await;

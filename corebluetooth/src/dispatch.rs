@@ -1,6 +1,9 @@
+//! Types for working with Grand Central Dispatch (GCD).
+
 use dispatch_executor::DispatchQueueAttrBuilder;
 use dispatch2::{DispatchAutoReleaseFrequency, DispatchQueueAttr, DispatchRetained};
 
+/// A quality-of-service level for a dispatch queue.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct DispatchQoS {
     class: dispatch2::DispatchQoS,
@@ -17,6 +20,7 @@ impl Default for DispatchQoS {
 }
 
 impl DispatchQoS {
+    /// Creates a new quality-of-service level.
     pub fn new(class: dispatch2::DispatchQoS, relative_priority: i32) -> Self {
         Self {
             class,

@@ -1,3 +1,5 @@
+//! A GATT characteristic descriptor.
+
 use btuuid::BluetoothUuid;
 use dispatch_executor::{SyncClone, SyncDrop};
 use objc2::rc::Retained;
@@ -7,6 +9,7 @@ use objc2_foundation::{NSData, NSNumber, NSString, NSUTF8StringEncoding};
 
 use crate::characteristic::Characteristic;
 
+/// A descriptor for a characteristic.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Descriptor {
     pub(crate) descriptor: Retained<CBDescriptor>,
@@ -20,15 +23,24 @@ impl Descriptor {
         Self { descriptor }
     }
 
+    /// The Bluetooth-specific UUID of the descriptor.
+    ///
+    /// See [`-[CBAttribute UUID]`](https://developer.apple.com/documentation/corebluetooth/cbattribute/uuid).
     pub fn uuid(&self) -> BluetoothUuid {
         let data = unsafe { self.descriptor.UUID().data() };
         BluetoothUuid::from_be_slice(unsafe { data.as_bytes_unchecked() }).unwrap()
     }
 
+    /// The characteristic that this descriptor belongs to.
+    ///
+    /// See [`-[CBDescriptor characteristic]`](https://developer.apple.com/documentation/corebluetooth/cbdescriptor/characteristic).
     pub fn characteristic(&self) -> Option<Characteristic> {
         unsafe { self.descriptor.characteristic() }.map(Characteristic::new)
     }
 
+    /// The most recent value of the descriptor.
+    ///
+    /// See [`-[CBDescriptor value]`](https://developer.apple.com/documentation/corebluetooth/cbdescriptor/value).
     pub fn value(&self) -> Option<Vec<u8>> {
         let value = unsafe { self.descriptor.value() };
         value.map(|value| value_to_slice(&value))
