@@ -4,9 +4,9 @@ members = ["corebluetooth", "corebluetooth-async", "dispatch-executor"]
 
 [workspace.dependencies]
 btuuid = { version = "0.1.0", features = ["std", "uuid"] }
-corebluetooth = { path = "corebluetooth" }
+corebluetooth = { version = "0.1.0", path = "corebluetooth" }
 dispatch2 = "0.3.0"
-dispatch-executor = { path = "dispatch-executor" }
+dispatch-executor = { version = "0.1.0", path = "dispatch-executor" }
 objc2 = "0.6.1"
 objc2-core-bluetooth = "0.3.1"
 objc2-core-foundation = "0.3.1"
